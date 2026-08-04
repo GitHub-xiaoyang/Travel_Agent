@@ -29,12 +29,12 @@ url = "https://pypi.tuna.tsinghua.edu.cn/simple"
 default = true
 
 [tool.setuptools.packages.find]
-where = ["src"]
+where = ["."]
 include = ["travel_agent*", "tools*", "config*", "utils*"]
 exclude = ["tests*", "docs*"]
 
 [tool.setuptools.package-dir]
-"" = "src"
+"" = "."
 
 [build-system]
 requires = ["setuptools>=61.0", "wheel"]

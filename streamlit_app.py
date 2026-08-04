@@ -16,7 +16,7 @@ import subprocess
 
 # 项目根目录
 PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
-MAIN_APP = os.path.join("src", "travel_agent", "frontend", "main_app.py")
+MAIN_APP = os.path.join("travel_agent", "frontend", "main_app.py")
 
 print(f"🚀 正在启动 Travel Agent...")
 print(f"   主应用: {MAIN_APP}")

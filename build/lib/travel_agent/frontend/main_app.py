@@ -13,7 +13,6 @@ Travel Agent — 豆包风格聊天界面
 
 import sys
 import os
-import re
 import uuid
 import json
 from datetime import datetime
@@ -28,7 +27,6 @@ import streamlit.components.v1 as components
 # 共享常量：统一降级逻辑
 from travel_agent.nodes.constants import check_degrade
 from travel_agent.utils.image_renderer import render_markdown_to_png, render_markdown_to_pdf
-from travel_agent.nodes.output_node import _postprocess_markdown_newlines
 
 # ========== 1. 页面配置（必须第一） ==========
 import streamlit as st
@@ -343,37 +341,6 @@ if "collapse_history" not in st.session_state:
     st.session_state.collapse_history = False
 
 
-def _markdown_to_html_for_div(text: str) -> str:
-    """
-    将 Markdown 文本转换为可在 HTML div 内正确渲染的 HTML 字符串
-
-    由于 _render_bubble 把内容整体包在 HTML div 中，Streamlit 不会解析 div 内部
-    的 Markdown 语法（如换行、水平线、加粗）。本函数做基础转换：
-    - 单换行 → 双换行（保证段落分隔）
-    - 连续长横线「──────────────────────」→ <hr>
-    - 换行符 → <br>（确保 HTML 中生效）
-
-    Args:
-        text: 原始 Markdown 文本
-
-    Returns:
-        转换后的 HTML 字符串
-    """
-    if not text:
-        return text
-    # 1. 后处理换行：单换行变段落分隔
-    text = _postprocess_markdown_newlines(text)
-    # 2. 将长横线分隔线转换为 HTML 水平线
-    text = re.sub(
-        r"─{10,}",
-        '<hr style="border:none;border-top:1px solid #E5E6EB;margin:12px 0;">',
-        text
-    )
-    # 3. 将剩余换行符转为 <br>，确保在 HTML div 内可见
-    text = text.replace("\n", "<br>\n")
-    return text
-
-
 def _render_bubble(
     content: str,
     is_user: bool = False,
@@ -408,18 +375,17 @@ def _render_bubble(
 <pre style="background:#F7F8FA;padding:8px 12px;border-radius:8px;font-size:12px;white-space:pre-wrap;margin-top:4px;">{tool_result}</pre>
 </details>"""
 
-    # 把主要文本和行程 Markdown 转换为可在 HTML div 内正确渲染的 HTML
-    content_html = _markdown_to_html_for_div(content)
+    # 行程卡片
     plan_html = ""
     if plan_md:
         plan_html = f"""<div class="plan-card" style="margin-top:12px;">
-{_markdown_to_html_for_div(plan_md)}
+{plan_md}
 </div>"""
 
     # 完整气泡 HTML
     full_html = f"""<div class="chat-msg {bubble_class}">
 {badge_html}
-{content_html}
+{content}
 {tool_detail_html}
 {plan_html}
 {extra_html}
@@ -466,11 +432,8 @@ def _stream_render(content: str, action_label: str = "", is_plan: bool = False) 
             )
             time.sleep(0.3)  # 轻微延迟营造流式感
             placeholder.empty()
-            # 完整渲染行程卡片（HTML 化，保证 div 内换行/分隔线生效）
-            full_html = (
-                f'{badge_html}<div class="plan-card" style="margin-top:12px;">'
-                f'{_markdown_to_html_for_div(content)}</div>'
-            )
+            # 完整渲染行程卡片
+            full_html = f'{badge_html}<div class="plan-card" style="margin-top:12px;">{content}</div>'
             placeholder.markdown(full_html, unsafe_allow_html=True)
     else:
         # 普通文本：逐字流式显示
@@ -481,17 +444,13 @@ def _stream_render(content: str, action_label: str = "", is_plan: bool = False) 
             for char in content:
                 displayed += char
                 placeholder.markdown(
-                    f'{badge_html}<div style="padding:12px;">'
-                    f'{_markdown_to_html_for_div(displayed)}</div>',
+                    f'{badge_html}<div style="padding:12px;">{displayed}</div>',
                     unsafe_allow_html=True
                 )
                 time.sleep(0.01)  # 打字机速度
             # 最终渲染
             placeholder.empty()
-            full_html = (
-                f'{badge_html}<div style="padding:12px;">'
-                f'{_markdown_to_html_for_div(content)}</div>'
-            )
+            full_html = f'{badge_html}<div style="padding:12px;">{content}</div>'
             st.markdown(full_html, unsafe_allow_html=True)
 
 
@@ -1721,25 +1680,20 @@ if prompt:
                                 chunks.append(chunk)
                                 current_text = "".join(chunks)
                                 placeholder.markdown(
-                                    f'{badge_html}<div class="plan-card" style="margin-top:12px;">'
-                                    f'{_markdown_to_html_for_div(current_text)}</div>',
+                                    f'{badge_html}<div class="plan-card" style="margin-top:12px;">{current_text}</div>',
                                     unsafe_allow_html=True
                                 )
 
                         final_doc = "".join(chunks)
-                        # 关键：把最终文案写回 final_state，确保 st.rerun() 后历史消息能正确渲染行程卡片
-                        final_state["final_travel_document"] = final_doc
-                        # 最终渲染（使用 HTML 化后的文案，保证换行/分隔线在 div 内生效）
+                        # 最终渲染
                         placeholder.empty()
                         st.markdown(
-                            f'{badge_html}<div class="plan-card" style="margin-top:12px;">'
-                            f'{_markdown_to_html_for_div(final_doc)}</div>',
+                            f'{badge_html}<div class="plan-card" style="margin-top:12px;">{final_doc}</div>',
                             unsafe_allow_html=True
                         )
                 elif schedule_struct and intent_info:
                     # 兼容旧流程
                     final_doc = schedule_md
-                    final_state["final_travel_document"] = final_doc
                     _stream_render(content=schedule_md, action_label=action_label, is_plan=True)
                 else:
                     final_doc = "⚠️ 行程数据生成失败，请重试"
@@ -1855,14 +1809,10 @@ if prompt:
                 ):
                     if kind == "delta":
                         accumulated_text += payload
-                        response_placeholder.markdown(
-                            _postprocess_markdown_newlines(accumulated_text)
-                        )
+                        response_placeholder.markdown(accumulated_text)
             except Exception as e:
                 accumulated_text = f"抱歉，处理您的问题时遇到了错误：{str(e)}"
-                response_placeholder.markdown(
-                    _postprocess_markdown_newlines(accumulated_text)
-                )
+                response_placeholder.markdown(accumulated_text)
 
         response_msg = {
             "id": str(uuid.uuid4())[:6],

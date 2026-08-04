@@ -6,7 +6,7 @@ Travel Agent 启动器
     python streamlit_app.py
 
 本脚本会自动启动 Streamlit 服务器，
-主应用文件为 src/travel_agent/frontend/main_app.py，
+主应用文件为 travel_agent/frontend/main_app.py，
 Streamlit 会自动识别同级 pages/ 目录下的多页面。
 """
 

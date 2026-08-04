@@ -1,0 +1,8 @@
+# 行程生成失败
+报错环节：{current_step}
+原因：{error_type_desc}
+
+💡提示：{user_tip}
+
+✅你可以尝试这样解决：
+{fix_suggest}

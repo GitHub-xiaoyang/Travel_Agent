@@ -24,13 +24,18 @@ dependencies = [
     "tenacity>=9.1.4",
 ]
 
-[project.scripts]
-travel-agent = "travel_agent:main"
-
 [[tool.uv.index]]
 url = "https://pypi.tuna.tsinghua.edu.cn/simple"
 default = true
 
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["travel_agent*", "tools*", "config*", "utils*"]
+exclude = ["tests*", "docs*"]
+
+[tool.setuptools.package-dir]
+"" = "src"
+
 [build-system]
-requires = ["uv_build>=0.12.0,<0.13.0"]
-build-backend = "uv_build"
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"

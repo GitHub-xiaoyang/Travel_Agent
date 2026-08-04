@@ -1,7 +1,7 @@
 {
   "dependencies": ["."],
   "graphs": {
-    "travel_assistant": "./travel_agent/graph/builder.py:agent"
+    "travel_assistant": "./src/travel_agent/graph/builder.py:agent"
   },
   "env": "./.env"
 }
